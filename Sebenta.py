@@ -23,9 +23,9 @@ if 'rental_cost' not in st.session_state:
 if 'rental_commission' not in st.session_state:
     st.session_state.rental_commission = 6.0
 if 'own_insurance' not in st.session_state:
-    st.session_state.own_insurance = 45.0
+    st.session_state.own_insurance = 46.0
 if 'own_maintenance' not in st.session_state:
-    st.session_state.own_maintenance = 25.0
+    st.session_state.own_maintenance = 24.0
 if 'own_commission' not in st.session_state:
     st.session_state.own_commission = 12.0
 if 'extra_expenses' not in st.session_state:
