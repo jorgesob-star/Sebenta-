@@ -51,6 +51,7 @@ with col1:
         help="Valor total ganho por semana antes de despesas"
     )
     
+    # Custo com combustível movido para cima
     fuel_cost = st.number_input(
         "Custo Semanal com Combustível (€):", 
         min_value=0.0, 
@@ -289,8 +290,8 @@ if st.session_state.calculation_type:
 with st.expander("💡 Dicas e Informações"):
     st.markdown("""
     - **Ganhos Semanais**: Valor total que você recebe pelos serviços de TVDE em uma semana.
-    - **Horas Trabalhadas**: Total de horas trabalhadas na semana (incluindo tempo de espera).
     - **Custo com Combustível**: Gasto semanal estimado com abastecimento.
+    - **Horas Trabalhadas**: Total de horas trabalhadas na semana (incluindo tempo de espera).
     - **Comissão**: Percentual que a plataforma retém pelos serviços.
     - **Custo do Aluguel**: Valor semanal pelo aluguel do veículo (se aplicável).
     - **Seguro**: Custo semanal do seguro do veículo próprio.
