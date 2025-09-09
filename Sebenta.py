@@ -62,7 +62,7 @@ with col1:
         step=10.0,
         help="Total de ganhos brutos na semana (apuro)"
     )
-    # NOVO: Adicionar input para número de horas trabalhadas
+    # Campo para horas trabalhadas
     horas_trabalhadas_semana = st.number_input(
         "Total de horas trabalhadas na semana", 
         min_value=0.0, 
@@ -94,7 +94,7 @@ ganhos_liquidos_semana = (ganhos_brutos_semana - comissao_valor_semana -
 
 margem_lucro = (ganhos_liquidos_semana / ganhos_brutos_semana) * 100 if ganhos_brutos_semana > 0 else 0
 
-# NOVO: Cálculo do valor por hora
+# Cálculo do valor por hora
 valor_por_hora = ganhos_liquidos_semana / horas_trabalhadas_semana if horas_trabalhadas_semana > 0 else 0
 
 # Exibir resultados
@@ -105,7 +105,7 @@ col1.metric("Ganhos Líquidos Semanais", f"€{ganhos_liquidos_semana:.2f}")
 col2.metric("Comissão Plataforma", f"€{comissao_valor_semana:.2f}")
 col3.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 
-# NOVO: Exibir resultado em €/h
+# Exibir resultado em €/h
 st.subheader("💰 Valor por Hora")
 st.metric("Ganho Líquido por Hora", f"€{valor_por_hora:.2f}")
 
@@ -151,14 +151,12 @@ with det_col2:
     st.write(f"- Total Custos: €{total_custos:.2f}")
     st.write(f"- **Lucro Líquido: €{ganhos_liquidos_semana:.2f}**")
     st.write(f"- Margem de Lucro: {margem_lucro:.1f}%")
-    # NOVO: Adicionar informação de valor por hora no detalhamento
     st.write(f"- **Valor por Hora: €{valor_por_hora:.2f}**")
 
 # Cálculo diário
 st.subheader("💰 Médias Diárias")
 ganho_bruto_diario = ganhos_brutos_semana / dias_trabalhados
 ganho_liquido_diario = ganhos_liquidos_semana / dias_trabalhados
-# NOVO: Cálculo de horas diárias
 horas_diarias = horas_trabalhadas_semana / dias_trabalhados
 
 col1, col2, col3 = st.columns(3)
@@ -185,7 +183,7 @@ resumo_col2.metric("Custos Semanais", f"€{total_custos:.2f}")
 resumo_col3.metric("Lucro Semanal", f"€{ganhos_liquidos_semana:.2f}", 
                   delta=f"{margem_lucro:.1f}%")
 
-# NOVO: Resumo de horas
+# Resumo de horas
 st.subheader("⏰ Resumo de Horas")
 horas_col1, horas_col2, horas_col3 = st.columns(3)
 horas_col1.metric("Total Horas Trabalhadas", f"{horas_trabalhadas_semana:.1f}h")
