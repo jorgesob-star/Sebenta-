@@ -143,8 +143,8 @@ if st.session_state.calculation_type:
         })
         chart = alt.Chart(df_chart).mark_bar(size=60).encode(
             x=alt.X("Opção", sort=None),
-            y="Lucro (€)"),
-            color="Opção"
+            y="Lucro (€)",
+            color="Opção"  # CORRETAMENTE indentado dentro do encode
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
 
