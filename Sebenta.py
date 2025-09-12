@@ -81,8 +81,8 @@ with st.expander("⚙️ Parâmetros Avançados"):
 # -------------------------------
 st.header("🧮 Calcular")
 
-# Detecta largura da tela (via query_params) para layout responsivo
-screen_width = int(st.query_params.get("width", [0])[0])  # substitui experimental_get_query_params
+# Detecta largura da tela via query_params
+screen_width = int(st.query_params.get("width", [0])[0])
 
 if screen_width < 600:
     # Mobile: empilhar verticalmente
@@ -147,6 +147,17 @@ if st.session_state.calculation_type:
     })
     st.dataframe(df_resultados, use_container_width=True)
 
+    # -------------------------------
+    # Cores automáticas do gráfico conforme tema
+    # -------------------------------
+    theme = st.get_option("theme.base")  # "light" ou "dark"
+    if theme == "dark":
+        bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"],
+                               range=["#FFB347", "#1E90FF"])
+    else:
+        bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"],
+                               range=["#FF7F50", "#6495ED"])
+
     # Gráfico comparativo
     if len(resultados) > 1:
         df_chart = pd.DataFrame({
@@ -156,7 +167,7 @@ if st.session_state.calculation_type:
         chart = alt.Chart(df_chart).mark_bar(size=60).encode(
             x=alt.X("Opção", sort=None),
             y="Lucro (€)",
-            color="Opção"
+            color=alt.Color("Opção", scale=bar_colors)
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
 
