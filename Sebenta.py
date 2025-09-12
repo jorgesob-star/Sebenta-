@@ -77,9 +77,10 @@ with st.expander("⚙️ Parâmetros Avançados"):
     st.number_input("Slot TVDE (€)", min_value=0.0, step=5.0, key="own_slot_tvde")
 
 # -------------------------------
-# Botões de cálculo
+# Botões de cálculo (mobile-first)
 # -------------------------------
 st.header("🧮 Calcular")
+
 screen_width = int(st.query_params.get("width", [0])[0])
 
 if screen_width < 600:
@@ -90,7 +91,7 @@ if screen_width < 600:
     if st.button("⚖️ Comparar", use_container_width=True):
         st.session_state.calculation_type = "comparar"
 else:
-    btn1, btn2, btn3 = st.columns([1,1,1], gap="small")
+    btn1, btn2, btn3 = st.columns([1, 1, 1], gap="small")
     with btn1:
         if st.button("🚘 Alugado", use_container_width=True):
             st.session_state.calculation_type = "alugado"
@@ -106,80 +107,85 @@ else:
 # -------------------------------
 def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
     resultados = {}
+    detalhes = []
+
     if calculation_type in ["próprio", "comparar"]:
-        custos = st.session_state.own_insurance + st.session_state.own_maintenance + st.session_state.own_slot_tvde + fuel_cost
+        seguro = st.session_state.own_insurance
+        manutencao = st.session_state.own_maintenance
+        slot = st.session_state.own_slot_tvde
+        combustivel = fuel_cost
+        comissao_valor = weekly_earnings * (st.session_state.own_commission / 100)
+        custos = seguro + manutencao + slot + combustivel
         if st.session_state.include_extra_expenses:
             custos += st.session_state.extra_expenses
-        comissao = weekly_earnings * (st.session_state.own_commission / 100)
-        resultados["Carro Próprio"] = weekly_earnings - custos - comissao
+        lucro_liquido = weekly_earnings - custos - comissao_valor
+        resultados["Carro Próprio"] = lucro_liquido
+
+        detalhes.append({
+            "Opção": "Carro Próprio",
+            "Seguro (€)": seguro,
+            "Manutenção (€)": manutencao,
+            "Slot TVDE (€)": slot,
+            "Combustível (€)": combustivel,
+            "Despesas Extras (€)": st.session_state.extra_expenses if st.session_state.include_extra_expenses else 0,
+            "Comissão (%)": st.session_state.own_commission,
+            "Comissão (€)": comissao_valor,
+            "Lucro Líquido (€)": lucro_liquido
+        })
+
     if calculation_type in ["alugado", "comparar"]:
-        custos = st.session_state.rental_cost + fuel_cost
+        aluguel = st.session_state.rental_cost
+        combustivel = fuel_cost
+        comissao_valor = weekly_earnings * (st.session_state.rental_commission / 100)
+        custos = aluguel + combustivel
         if st.session_state.include_extra_expenses:
             custos += st.session_state.extra_expenses
-        comissao = weekly_earnings * (st.session_state.rental_commission / 100)
-        resultados["Carro Alugado"] = weekly_earnings - custos - comissao
-    return resultados
+        lucro_liquido = weekly_earnings - custos - comissao_valor
+        resultados["Carro Alugado"] = lucro_liquido
+
+        detalhes.append({
+            "Opção": "Carro Alugado",
+            "Aluguel (€)": aluguel,
+            "Combustível (€)": combustivel,
+            "Despesas Extras (€)": st.session_state.extra_expenses if st.session_state.include_extra_expenses else 0,
+            "Comissão (%)": st.session_state.rental_commission,
+            "Comissão (€)": comissao_valor,
+            "Lucro Líquido (€)": lucro_liquido
+        })
+
+    return resultados, detalhes
 
 # -------------------------------
 # Resultados
 # -------------------------------
-calculation_type = st.session_state.get("calculation_type")
+if st.session_state.calculation_type:
+    resultados, detalhes = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
 
-if calculation_type:
-    resultados = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type)
-
-    st.subheader("📊 Resultados")
-
-    # Métricas
+    st.subheader("📊 Resultados Resumidos")
     for tipo, lucro in resultados.items():
         lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
         st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
 
-    # Tabela detalhada
-    df_resultados = pd.DataFrame({
-        "Opção": list(resultados.keys()),
-        "Lucro (€)": [f"{v:,.2f}" for v in resultados.values()],
-        "Lucro por Hora (€)": [f"{(v/weekly_hours):,.2f}" if weekly_hours > 0 else "0.00" for v in resultados.values()]
-    })
-    st.dataframe(df_resultados, use_container_width=True)
+    st.subheader("📋 Detalhamento de Custos")
+    st.dataframe(pd.DataFrame(detalhes).fillna("–"), use_container_width=True)
 
-    # Diferença de valor
-    if calculation_type == "comparar" and len(resultados) == 2:
-        lucro_proprio = resultados.get("Carro Próprio", 0)
-        lucro_alugado = resultados.get("Carro Alugado", 0)
-        diferenca = lucro_proprio - lucro_alugado
-        st.markdown(f"**💰 Diferença entre Carro Próprio e Carro Alugado:** € {diferenca:,.2f}")
-
-    # Cores automáticas
     theme = st.get_option("theme.base")
     if theme == "dark":
         bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"], range=["#FFB347", "#1E90FF"])
     else:
         bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"], range=["#FF7F50", "#6495ED"])
 
-    # Gráfico comparativo com anotação
     if len(resultados) > 1:
-        df_chart = pd.DataFrame({"Opção": list(resultados.keys()), "Lucro (€)": list(resultados.values())})
-
+        df_chart = pd.DataFrame({
+            "Opção": list(resultados.keys()),
+            "Lucro (€)": list(resultados.values())
+        })
         chart = alt.Chart(df_chart).mark_bar(size=60).encode(
             x=alt.X("Opção", sort=None),
             y="Lucro (€)",
             color=alt.Color("Opção", scale=bar_colors)
         ).properties(height=300)
-
-        if calculation_type == "comparar" and len(resultados) == 2:
-            y_pos = max(resultados.values()) + 10
-            diferenca_text = f"Δ € {diferenca:,.2f}"
-            annotation = alt.Chart(pd.DataFrame({"y": [y_pos], "text": [diferenca_text]})).mark_text(
-                align='center', baseline='bottom', color='black', fontWeight='bold'
-            ).encode(
-                x=alt.value(200),  # posição fixa para evitar TypeError
-                y='y:Q',
-                text='text:N'
-            )
-            st.altair_chart(chart + annotation, use_container_width=True)
-        else:
-            st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
 
 # -------------------------------
 # Dicas
