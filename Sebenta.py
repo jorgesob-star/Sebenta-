@@ -18,7 +18,7 @@ st.set_page_config(
 # Inicialização do estado
 # -------------------------------
 defaults = {
-    "rental_cost": 270.0,
+    "rental_cost": 250.0,
     "rental_commission": 6.0,
     "own_insurance": 45.0,
     "own_maintenance": 25.0,
