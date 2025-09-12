@@ -28,7 +28,6 @@ defaults = {
     "include_extra_expenses": False,
     "calculation_type": None,
 }
-
 for key, val in defaults.items():
     st.session_state.setdefault(key, val)
 
@@ -76,7 +75,7 @@ with st.expander("⚙️ Parâmetros Avançados"):
     st.number_input("Slot TVDE (€)", min_value=0.0, step=5.0, key="own_slot_tvde")
 
 # -------------------------------
-# Função de cálculo otimizada
+# Função de cálculo
 # -------------------------------
 def calcular_lucro(earnings, custos, comissao_pct, extra_expenses=0.0):
     total_custos = custos + extra_expenses
@@ -120,13 +119,20 @@ def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
             "Lucro Líquido (€)": lucro
         })
 
+    # Cálculo da diferença se comparar
+    if calculation_type == "comparar" and len(resultados) == 2:
+        lucro_proprio = resultados["Carro Próprio"]
+        lucro_alugado = resultados["Carro Alugado"]
+        diferenca = lucro_proprio - lucro_alugado
+        diferenca_pct = (diferenca / lucro_alugado * 100) if lucro_alugado != 0 else 0
+        resultados["Diferença"] = (diferenca, diferenca_pct)
+
     return resultados, detalhes
 
 # -------------------------------
 # Botões mobile-first
 # -------------------------------
 st.header("🧮 Calcular")
-
 btn_cols = st.columns(3, gap="small")
 with btn_cols[0]:
     if st.button("🚘 Alugado", use_container_width=True):
@@ -144,10 +150,15 @@ with btn_cols[2]:
 if st.session_state.calculation_type:
     resultados, detalhes = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
 
-    st.subheader("📊 Resultados Resumidos")
-    for tipo, lucro in resultados.items():
-        lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
-        st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
+    st.subheader("📊 Resumo de Lucros")
+    cards = st.columns(len(resultados))
+    for i, (tipo, lucro) in enumerate(resultados.items()):
+        with cards[i]:
+            if tipo == "Diferença":
+                st.metric(label="Diferença (€)", value=f"€ {lucro[0]:,.2f}", delta=f"{lucro[1]:.1f}%")
+            else:
+                lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
+                st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
 
     st.subheader("📋 Detalhamento de Custos")
     st.dataframe(pd.DataFrame(detalhes).fillna("–"), use_container_width=True)
@@ -155,12 +166,13 @@ if st.session_state.calculation_type:
     # Gráfico Altair responsivo
     theme = st.get_option("theme.base")
     colors = {"dark": ["#FFB347", "#1E90FF"], "light": ["#FF7F50", "#6495ED"]}
-    bar_colors = alt.Scale(domain=list(resultados.keys()), range=colors.get(theme, colors["light"]))
+    bar_colors = alt.Scale(domain=[k for k in resultados.keys() if k != "Diferença"],
+                           range=colors.get(theme, colors["light"]))
 
     if len(resultados) > 1:
         df_chart = pd.DataFrame({
-            "Opção": list(resultados.keys()),
-            "Lucro (€)": list(resultados.values())
+            "Opção": [k for k in resultados.keys() if k != "Diferença"],
+            "Lucro (€)": [v for k,v in resultados.items() if k != "Diferença"]
         })
         chart = alt.Chart(df_chart).mark_bar(size=60).encode(
             x=alt.X("Opção", sort=None),
