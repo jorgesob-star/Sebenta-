@@ -26,7 +26,6 @@ defaults = {
     "own_slot_tvde": 25.0,
     "extra_expenses": 0.0,
     "include_extra_expenses": False,
-    "calculation_type": None,
 }
 
 for key, val in defaults.items():
@@ -37,7 +36,7 @@ for key, val in defaults.items():
 # Título
 # -------------------------------
 st.title("🚗 Comparador de Ganhos TVDE")
-st.markdown("Compare os lucros entre carro alugado e carro próprio.")
+st.markdown("Compare os lucros entre carro alugado e carro próprio em tempo real.")
 
 # -------------------------------
 # Dados de entrada
@@ -77,99 +76,77 @@ with st.expander("⚙️ Parâmetros Avançados"):
     st.number_input("Slot TVDE (€)", min_value=0.0, step=5.0, key="own_slot_tvde")
 
 # -------------------------------
-# Botões de cálculo (mobile-first)
-# -------------------------------
-st.header("🧮 Calcular")
-
-# Detecta largura da tela via query_params
-screen_width = int(st.query_params.get("width", [0])[0])
-
-if screen_width < 600:
-    # Mobile: empilhar verticalmente
-    if st.button("🚘 Alugado", use_container_width=True):
-        st.session_state.calculation_type = "alugado"
-    if st.button("🚗 Próprio", use_container_width=True):
-        st.session_state.calculation_type = "próprio"
-    if st.button("⚖️ Comparar", use_container_width=True):
-        st.session_state.calculation_type = "comparar"
-else:
-    # Desktop: colunas horizontais
-    btn1, btn2, btn3 = st.columns([1, 1, 1], gap="small")
-    with btn1:
-        if st.button("🚘 Alugado", use_container_width=True):
-            st.session_state.calculation_type = "alugado"
-    with btn2:
-        if st.button("🚗 Próprio", use_container_width=True):
-            st.session_state.calculation_type = "próprio"
-    with btn3:
-        if st.button("⚖️ Comparar", use_container_width=True):
-            st.session_state.calculation_type = "comparar"
-
-# -------------------------------
 # Função de cálculo
 # -------------------------------
-def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
+def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost):
     resultados = {}
-    if calculation_type in ["próprio", "comparar"]:
-        custos = st.session_state.own_insurance + st.session_state.own_maintenance + st.session_state.own_slot_tvde + fuel_cost
-        if st.session_state.include_extra_expenses:
-            custos += st.session_state.extra_expenses
-        comissao = weekly_earnings * (st.session_state.own_commission / 100)
-        resultados["Carro Próprio"] = weekly_earnings - custos - comissao
 
-    if calculation_type in ["alugado", "comparar"]:
-        custos = st.session_state.rental_cost + fuel_cost
-        if st.session_state.include_extra_expenses:
-            custos += st.session_state.extra_expenses
-        comissao = weekly_earnings * (st.session_state.rental_commission / 100)
-        resultados["Carro Alugado"] = weekly_earnings - custos - comissao
+    # Carro Próprio
+    custos_proprio = (
+        st.session_state.own_insurance
+        + st.session_state.own_maintenance
+        + st.session_state.own_slot_tvde
+        + fuel_cost
+    )
+    if st.session_state.include_extra_expenses:
+        custos_proprio += st.session_state.extra_expenses
+    comissao_proprio = weekly_earnings * (st.session_state.own_commission / 100)
+    resultados["Carro Próprio"] = weekly_earnings - custos_proprio - comissao_proprio
+
+    # Carro Alugado
+    custos_alugado = st.session_state.rental_cost + fuel_cost
+    if st.session_state.include_extra_expenses:
+        custos_alugado += st.session_state.extra_expenses
+    comissao_alugado = weekly_earnings * (st.session_state.rental_commission / 100)
+    resultados["Carro Alugado"] = weekly_earnings - custos_alugado - comissao_alugado
 
     return resultados
 
 # -------------------------------
+# Executar cálculos em tempo real
+# -------------------------------
+resultados = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost)
+
+# -------------------------------
 # Resultados
 # -------------------------------
-if st.session_state.calculation_type:
-    resultados = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
+st.subheader("📊 Resultados")
 
-    st.subheader("📊 Resultados")
+# Métricas (mobile-friendly)
+for tipo, lucro in resultados.items():
+    lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
+    st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
 
-    # Métricas (mobile-friendly)
-    for tipo, lucro in resultados.items():
-        lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
-        st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
+# Tabela detalhada
+df_resultados = pd.DataFrame({
+    "Opção": list(resultados.keys()),
+    "Lucro (€)": [f"{v:,.2f}" for v in resultados.values()],
+    "Lucro por Hora (€)": [f"{(v/weekly_hours):,.2f}" if weekly_hours > 0 else "0.00" for v in resultados.values()]
+})
+st.dataframe(df_resultados, use_container_width=True)
 
-    # Tabela detalhada
-    df_resultados = pd.DataFrame({
-        "Opção": list(resultados.keys()),
-        "Lucro (€)": [f"{v:,.2f}" for v in resultados.values()],
-        "Lucro por Hora (€)": [f"{(v/weekly_hours):,.2f}" if weekly_hours > 0 else "0.00" for v in resultados.values()]
-    })
-    st.dataframe(df_resultados, use_container_width=True)
+# -------------------------------
+# Cores automáticas do gráfico conforme tema
+# -------------------------------
+theme = st.get_option("theme.base")  # "light" ou "dark"
+if theme == "dark":
+    bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"],
+                           range=["#FFB347", "#1E90FF"])
+else:
+    bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"],
+                           range=["#FF7F50", "#6495ED"])
 
-    # -------------------------------
-    # Cores automáticas do gráfico conforme tema
-    # -------------------------------
-    theme = st.get_option("theme.base")  # "light" ou "dark"
-    if theme == "dark":
-        bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"],
-                               range=["#FFB347", "#1E90FF"])
-    else:
-        bar_colors = alt.Scale(domain=["Carro Próprio", "Carro Alugado"],
-                               range=["#FF7F50", "#6495ED"])
-
-    # Gráfico comparativo
-    if len(resultados) > 1:
-        df_chart = pd.DataFrame({
-            "Opção": list(resultados.keys()),
-            "Lucro (€)": list(resultados.values())
-        })
-        chart = alt.Chart(df_chart).mark_bar(size=60).encode(
-            x=alt.X("Opção", sort=None),
-            y="Lucro (€)",
-            color=alt.Color("Opção", scale=bar_colors)
-        ).properties(height=300)
-        st.altair_chart(chart, use_container_width=True)
+# Gráfico comparativo
+df_chart = pd.DataFrame({
+    "Opção": list(resultados.keys()),
+    "Lucro (€)": list(resultados.values())
+})
+chart = alt.Chart(df_chart).mark_bar(size=60).encode(
+    x=alt.X("Opção", sort=None),
+    y="Lucro (€)",
+    color=alt.Color("Opção", scale=bar_colors)
+).properties(height=300)
+st.altair_chart(chart, use_container_width=True)
 
 # -------------------------------
 # Dicas
