@@ -25,19 +25,19 @@ if 'despesas_fixas' not in st.session_state:
 if 'show_advanced' not in st.session_state:
     st.session_state.show_advanced = False
 
-# Função para alternar a visualização das configurações avançadas
+# Função para alternar a visualização da seção de parâmetros
 def toggle_advanced():
     st.session_state.show_advanced = not st.session_state.show_advanced
 
-# Botão para mostrar/ocultar configurações avançadas
+# Botão para mostrar/ocultar seção de alteração de parâmetros
 st.button(
-    "⚙️ Configurações Avançadas" if not st.session_state.show_advanced else "⬆️ Ocultar Configurações",
+    "⚙️ Alterar Parâmetros" if not st.session_state.show_advanced else "⬆️ Ocultar Alterar Parâmetros",
     on_click=toggle_advanced
 )
 
-# Mostrar configurações avançadas se o botão foi clicado
+# Mostrar inputs de alteração de parâmetros se a seção estiver ativa
 if st.session_state.show_advanced:
-    with st.expander("Configurações Avançadas", expanded=True):
+    with st.expander("Alterar Parâmetros", expanded=True):
         st.session_state.comissao_plataforma = st.number_input(
             "Comissão da Plataforma (%)", 
             min_value=0.0, max_value=100.0, 
@@ -55,7 +55,7 @@ if st.session_state.show_advanced:
         with col3:
             st.session_state.slot = st.number_input("Slot", min_value=0.0, value=st.session_state.slot, step=5.0)
         
-        # Calcular total das despesas fixas
+        # Recalcular total das despesas fixas
         st.session_state.despesas_fixas = st.session_state.aluguer + st.session_state.seguro + st.session_state.slot
         st.info(f"💡 Total de Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
 
@@ -63,7 +63,7 @@ if st.session_state.show_advanced:
 st.header("Entradas Semanais")
 
 apuro_semanal = 900.0
-combustivel_semanal = 210.0
+combustivel_semanal = 200.0
 
 col1, col2 = st.columns(2)
 
@@ -199,12 +199,12 @@ horas_col1.metric("Total Horas Trabalhadas", f"{horas_trabalhadas_semana:.1f}h")
 horas_col2.metric("Média Horas por Dia", f"{horas_diarias:.1f}h")
 horas_col3.metric("Valor por Hora", f"€{valor_por_hora:.2f}")
 
-# Valores avançados
+# Valores de parâmetros atuais
 if st.session_state.show_advanced:
-    st.info(f"ℹ️ **Valores atuais das configurações avançadas:** Comissão: {st.session_state.comissao_plataforma}%, "
+    st.info(f"ℹ️ **Valores atuais dos parâmetros:** Comissão: {st.session_state.comissao_plataforma}%, "
             f"Aluguer: €{st.session_state.aluguer:.2f}, Seguro: €{st.session_state.seguro:.2f}, Slot: €{st.session_state.slot:.2f}, "
             f"Total Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
 
 # Rodapé
 st.markdown("---")
-st.caption("App desenvolvido para cálculo de ganhos no TVDE. Use o botão 'Configurações Avançadas' para ajustar a comissão e despesas fixas detalhadas.")
+st.caption("App desenvolvido para cálculo de ganhos no TVDE. Use o botão 'Alterar Parâmetros' para ajustar a comissão e despesas fixas detalhadas.")
