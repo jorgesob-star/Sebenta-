@@ -124,8 +124,7 @@ def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
         lucro_alugado = resultados["Carro Alugado"]
         diferenca = lucro_proprio - lucro_alugado
         diferenca_pct = (diferenca / lucro_alugado * 100) if lucro_alugado != 0 else 0
-        # Salva apenas o valor e a percentagem usada
-        resultados["Diferença"] = (diferenca, st.session_state.own_commission if lucro_proprio > lucro_alugado else st.session_state.rental_commission)
+        resultados["Diferença"] = (diferenca, diferenca_pct)
 
     return resultados, detalhes
 
@@ -145,31 +144,31 @@ with btn_cols[2]:
         st.session_state.calculation_type = "comparar"
 
 # -------------------------------
-# Cards simplificados
+# Cards estilo painel sem cores
 # -------------------------------
 if st.session_state.calculation_type:
     resultados, detalhes = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
     
     st.subheader("📊 Painéis de Lucro")
     cards = st.columns(len(resultados))
-    
-    for i, (tipo, valor) in enumerate(resultados.items()):
+
+    for i, (tipo, lucro) in enumerate(resultados.items()):
         with cards[i]:
             st.markdown(f"### {tipo}")
             if tipo == "Diferença":
-                st.markdown(f"<h2>€ {valor[0]:,.2f}</h2>", unsafe_allow_html=True)
-                st.markdown(f"<p>Percentagem utilizada para cálculo: {valor[1]:.1f}%</p>", unsafe_allow_html=True)
+                st.markdown(f"<h2>€ {lucro[0]:,.2f}</h2>", unsafe_allow_html=True)
+                st.markdown(f"<p>Δ {lucro[1]:.1f}%</p>", unsafe_allow_html=True)
             else:
-                lucro_hora = valor / weekly_hours if weekly_hours > 0 else 0
-                st.markdown(f"<h2>€ {valor:,.2f}</h2>", unsafe_allow_html=True)
+                lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
+                st.markdown(f"<h2>€ {lucro:,.2f}</h2>", unsafe_allow_html=True)
                 st.markdown(f"<p>Lucro/hora: {lucro_hora:.2f} €/h</p>", unsafe_allow_html=True)
 
-                # Mini-resumo dos custos
+                # Mini-resumo dos custos sem cores
                 detalhe = next((d for d in detalhes if d["Opção"] == tipo), None)
                 if detalhe:
                     for k, v in detalhe.items():
                         if k not in ["Opção", "Lucro Líquido (€)"]:
-                            st.markdown(f"<p style='margin:0'>{k}: € {v}</p>", unsafe_allow_html=True)
+                            st.markdown(f"{k}: € {v}")
 
     # Gráfico Altair
     theme = st.get_option("theme.base")
