@@ -194,7 +194,7 @@ if st.session_state.calculation_type:
     if not df_chart.empty:
         chart = alt.Chart(df_chart).mark_bar(size=60).encode(
             x=alt.X("Opção", sort=None),
-            y="Lucro (€)"),
+            y="Lucro (€)",
             color=alt.Color("Opção", scale=bar_colors),
             tooltip=["Opção", "Lucro (€)"]
         ).properties(height=300)
