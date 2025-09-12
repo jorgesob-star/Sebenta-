@@ -14,8 +14,14 @@ st.markdown("Calcule seus rendimentos líquidos semanais como motorista TVDE")
 # Inicializar variáveis de sessão
 if 'comissao_plataforma' not in st.session_state:
     st.session_state.comissao_plataforma = 6.0
+if 'aluguer' not in st.session_state:
+    st.session_state.aluguer = 150.0
+if 'seguro' not in st.session_state:
+    st.session_state.seguro = 80.0
+if 'slot' not in st.session_state:
+    st.session_state.slot = 40.0
 if 'despesas_fixas' not in st.session_state:
-    st.session_state.despesas_fixas = 270.0
+    st.session_state.despesas_fixas = st.session_state.aluguer + st.session_state.seguro + st.session_state.slot
 if 'show_advanced' not in st.session_state:
     st.session_state.show_advanced = False
 
@@ -38,16 +44,24 @@ if st.session_state.show_advanced:
             value=st.session_state.comissao_plataforma, step=0.5,
             key="comissao_input"
         )
-        st.session_state.despesas_fixas = st.number_input(
-            "Despesas Fixas Semanais (€) (aluguer, seguro, slot, etc.)", 
-            min_value=0.0, value=st.session_state.despesas_fixas, step=10.0,
-            key="despesas_fixas_input"
-        )
+        
+        # Inputs detalhados de despesas fixas
+        st.markdown("### Despesas Fixas Detalhadas (€)")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.session_state.aluguer = st.number_input("Aluguer", min_value=0.0, value=st.session_state.aluguer, step=5.0)
+        with col2:
+            st.session_state.seguro = st.number_input("Seguro", min_value=0.0, value=st.session_state.seguro, step=5.0)
+        with col3:
+            st.session_state.slot = st.number_input("Slot", min_value=0.0, value=st.session_state.slot, step=5.0)
+        
+        # Calcular total das despesas fixas
+        st.session_state.despesas_fixas = st.session_state.aluguer + st.session_state.seguro + st.session_state.slot
+        st.info(f"💡 Total de Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
 
 # Entradas principais do usuário
 st.header("Entradas Semanais")
 
-# Valores iniciais
 apuro_semanal = 900.0
 combustivel_semanal = 210.0
 
@@ -134,7 +148,10 @@ with det_col1:
     st.write("**Custos:**")
     st.write(f"- Comissão Plataforma: €{comissao_valor_semana:.2f}")
     st.write(f"- Gasolina: €{custo_gasolina_semana:.2f}")
-    st.write(f"- Despesas Fixas (aluguer, seguro, slot, etc.): €{st.session_state.despesas_fixas:.2f}")
+    st.write(f"- Aluguer: €{st.session_state.aluguer:.2f}")
+    st.write(f"- Seguro: €{st.session_state.seguro:.2f}")
+    st.write(f"- Slot: €{st.session_state.slot:.2f}")
+    st.write(f"- Total Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
     st.write(f"- Outros Custos: €{outros_custos:.2f}")
 
 with det_col2:
@@ -184,8 +201,10 @@ horas_col3.metric("Valor por Hora", f"€{valor_por_hora:.2f}")
 
 # Valores avançados
 if st.session_state.show_advanced:
-    st.info(f"ℹ️ **Valores atuais das configurações avançadas:** Comissão: {st.session_state.comissao_plataforma}%, Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
+    st.info(f"ℹ️ **Valores atuais das configurações avançadas:** Comissão: {st.session_state.comissao_plataforma}%, "
+            f"Aluguer: €{st.session_state.aluguer:.2f}, Seguro: €{st.session_state.seguro:.2f}, Slot: €{st.session_state.slot:.2f}, "
+            f"Total Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
 
 # Rodapé
 st.markdown("---")
-st.caption("App desenvolvido para cálculo de ganhos no TVDE. Use o botão 'Configurações Avançadas' para ajustar a comissão e despesas fixas.")
+st.caption("App desenvolvido para cálculo de ganhos no TVDE. Use o botão 'Configurações Avançadas' para ajustar a comissão e despesas fixas detalhadas.")
