@@ -77,15 +77,12 @@ with st.expander("⚙️ Parâmetros Avançados"):
     st.number_input("Slot TVDE (€)", min_value=0.0, step=5.0, key="own_slot_tvde")
 
 # -------------------------------
-# Botões de cálculo (mobile-first)
+# Botões de cálculo
 # -------------------------------
 st.header("🧮 Calcular")
-
-# Detecta largura da tela via query_params
 screen_width = int(st.query_params.get("width", [0])[0])
 
 if screen_width < 600:
-    # Mobile: empilhar verticalmente
     if st.button("🚘 Alugado", use_container_width=True):
         st.session_state.calculation_type = "alugado"
     if st.button("🚗 Próprio", use_container_width=True):
@@ -93,8 +90,7 @@ if screen_width < 600:
     if st.button("⚖️ Comparar", use_container_width=True):
         st.session_state.calculation_type = "comparar"
 else:
-    # Desktop: colunas horizontais
-    btn1, btn2, btn3 = st.columns([1, 1, 1], gap="small")
+    btn1, btn2, btn3 = st.columns([1,1,1], gap="small")
     with btn1:
         if st.button("🚘 Alugado", use_container_width=True):
             st.session_state.calculation_type = "alugado"
@@ -116,14 +112,12 @@ def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
             custos += st.session_state.extra_expenses
         comissao = weekly_earnings * (st.session_state.own_commission / 100)
         resultados["Carro Próprio"] = weekly_earnings - custos - comissao
-
     if calculation_type in ["alugado", "comparar"]:
         custos = st.session_state.rental_cost + fuel_cost
         if st.session_state.include_extra_expenses:
             custos += st.session_state.extra_expenses
         comissao = weekly_earnings * (st.session_state.rental_commission / 100)
         resultados["Carro Alugado"] = weekly_earnings - custos - comissao
-
     return resultados
 
 # -------------------------------
@@ -179,7 +173,7 @@ if calculation_type:
             annotation = alt.Chart(pd.DataFrame({"y": [y_pos], "text": [diferenca_text]})).mark_text(
                 align='center', baseline='bottom', color='black', fontWeight='bold'
             ).encode(
-                x=alt.value(chart.width / 2 if chart.width else 150),
+                x=alt.value(200),  # posição fixa para evitar TypeError
                 y='y:Q',
                 text='text:N'
             )
