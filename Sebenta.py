@@ -1,215 +1,191 @@
-# -------------------------------
-# Imports
-# -------------------------------
 import streamlit as st
-import pandas as pd
-import altair as alt
 
-# -------------------------------
 # Configuração da página
-# -------------------------------
 st.set_page_config(
-    page_title="Comparador de Ganhos TVDE",
+    page_title="Calculadora TVDE Semanal",
     page_icon="🚗",
-    layout="wide"
+    layout="centered"
 )
 
-# -------------------------------
-# Inicialização do estado
-# -------------------------------
-defaults = {
-    "rental_cost": 250.0,
-    "rental_commission": 6.0,
-    "own_insurance": 45.0,
-    "own_maintenance": 25.0,
-    "own_commission": 6.0,
-    "own_slot_tvde": 25.0,
-    "extra_expenses": 0.0,
-    "include_extra_expenses": False,
-    "calculation_type": None,
+# Título da aplicação
+st.title("🚗 Calculadora de Ganhos Semanais TVDE")
+st.markdown("Calcule seus rendimentos líquidos semanais como motorista TVDE")
+
+# Inicializar variáveis de sessão
+if 'comissao_plataforma' not in st.session_state:
+    st.session_state.comissao_plataforma = 6.0
+if 'despesas_fixas' not in st.session_state:
+    st.session_state.despesas_fixas = 270.0
+if 'show_advanced' not in st.session_state:
+    st.session_state.show_advanced = False
+
+# Função para alternar a visualização das configurações avançadas
+def toggle_advanced():
+    st.session_state.show_advanced = not st.session_state.show_advanced
+
+# Botão para mostrar/ocultar configurações avançadas
+st.button(
+    "⚙️ Configurações Avançadas" if not st.session_state.show_advanced else "⬆️ Ocultar Configurações",
+    on_click=toggle_advanced
+)
+
+# Mostrar configurações avançadas se o botão foi clicado
+if st.session_state.show_advanced:
+    with st.expander("Configurações Avançadas", expanded=True):
+        st.session_state.comissao_plataforma = st.number_input(
+            "Comissão da Plataforma (%)", 
+            min_value=0.0, max_value=100.0, 
+            value=st.session_state.comissao_plataforma, step=0.5,
+            key="comissao_input"
+        )
+        st.session_state.despesas_fixas = st.number_input(
+            "Despesas Fixas Semanais (€) (aluguer, seguro, slot, etc.)", 
+            min_value=0.0, value=st.session_state.despesas_fixas, step=10.0,
+            key="despesas_fixas_input"
+        )
+
+# Entradas principais do usuário
+st.header("Entradas Semanais")
+
+# Valores iniciais
+apuro_semanal = 900.0
+combustivel_semanal = 210.0
+
+col1, col2 = st.columns(2)
+
+with col1:
+    dias_trabalhados = st.slider("Dias trabalhados na semana", 1, 7, 7)
+    ganhos_brutos_semana = st.number_input(
+        "Ganhos Brutos Semanais (€)", 
+        min_value=0.0, 
+        value=apuro_semanal, 
+        step=10.0,
+        help="Total de ganhos brutos na semana (apuro)"
+    )
+    horas_trabalhadas_semana = st.number_input(
+        "Total de horas trabalhadas na semana", 
+        min_value=0.0, 
+        value=50.0, 
+        step=0.5,
+        help="Número total de horas que trabalhou durante a semana"
+    )
+
+with col2:
+    custo_gasolina_semana = st.number_input(
+        "Custo com Gasolina Semanal (€)", 
+        min_value=0.0, 
+        value=combustivel_semanal, 
+        step=10.0
+    )
+    outros_custos = st.number_input(
+        "Outros Custos Semanais (€)", 
+        min_value=0.0, 
+        value=0.0, 
+        step=5.0,
+        help="Lavagens, portagens, estacionamento, etc."
+    )
+
+# Cálculos
+comissao_valor_semana = ganhos_brutos_semana * (st.session_state.comissao_plataforma / 100)
+
+ganhos_liquidos_semana = (ganhos_brutos_semana - comissao_valor_semana - 
+                          custo_gasolina_semana - st.session_state.despesas_fixas - outros_custos)
+
+margem_lucro = (ganhos_liquidos_semana / ganhos_brutos_semana) * 100 if ganhos_brutos_semana > 0 else 0
+valor_por_hora = ganhos_liquidos_semana / horas_trabalhadas_semana if horas_trabalhadas_semana > 0 else 0
+
+# Resultados
+st.header("Resultados Semanais")
+col1, col2, col3 = st.columns(3)
+col1.metric("Ganhos Líquidos Semanais", f"€{ganhos_liquidos_semana:.2f}")
+col2.metric("Comissão Plataforma", f"€{comissao_valor_semana:.2f}")
+col3.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
+
+st.subheader("💰 Valor por Hora")
+st.metric("Ganho Líquido por Hora", f"€{valor_por_hora:.2f}")
+
+# Distribuição de custos
+st.subheader("Distribuição dos Custos e Ganhos")
+categorias = ['Ganhos Líquidos', 'Comissão', 'Gasolina', 'Despesas Fixas', 'Outros']
+valores = [
+    max(ganhos_liquidos_semana, 0), 
+    comissao_valor_semana, 
+    custo_gasolina_semana, 
+    st.session_state.despesas_fixas, 
+    outros_custos
+]
+
+data = {
+    "Categoria": categorias,
+    "Valor (€)": valores,
+    "Tipo": ["Ganho", "Custo", "Custo", "Custo", "Custo"]
 }
-for key, val in defaults.items():
-    st.session_state.setdefault(key, val)
 
-# -------------------------------
-# Título
-# -------------------------------
-st.title("🚗 Comparador de Ganhos TVDE")
-st.markdown("Compare os lucros entre carro alugado e carro próprio.")
+st.bar_chart(data, x="Categoria", y="Valor (€)", color="Tipo")
 
-# -------------------------------
-# Dados de entrada
-# -------------------------------
-st.header("📊 Dados de Entrada")
-weekly_earnings = st.number_input("Ganhos Semanais (€)", min_value=0.0, value=700.0, step=10.0)
-weekly_hours = st.number_input("Horas Semanais", min_value=0, value=50, step=1)
-fuel_cost = st.number_input("Combustível (€)", min_value=0.0, value=200.0, step=5.0)
+# Tabela de detalhamento
+st.subheader("📊 Detalhamento dos Custos")
+det_col1, det_col2 = st.columns(2)
 
-# -------------------------------
-# Despesas extras
-# -------------------------------
-st.header("💸 Despesas Extras")
-st.session_state.include_extra_expenses = st.checkbox(
-    "Incluir despesas extras", value=st.session_state.include_extra_expenses
-)
-if st.session_state.include_extra_expenses:
-    st.session_state.extra_expenses = st.number_input(
-        "Despesas Extras (€)",
-        min_value=0.0,
-        value=st.session_state.extra_expenses,
-        step=5.0
-    )
+with det_col1:
+    st.write("**Ganhos:**")
+    st.write(f"- Apuro Bruto: €{ganhos_brutos_semana:.2f}")
+    st.write("")
+    st.write("**Custos:**")
+    st.write(f"- Comissão Plataforma: €{comissao_valor_semana:.2f}")
+    st.write(f"- Gasolina: €{custo_gasolina_semana:.2f}")
+    st.write(f"- Despesas Fixas (aluguer, seguro, slot, etc.): €{st.session_state.despesas_fixas:.2f}")
+    st.write(f"- Outros Custos: €{outros_custos:.2f}")
 
-# -------------------------------
-# Parâmetros avançados
-# -------------------------------
-with st.expander("⚙️ Parâmetros Avançados"):
-    st.subheader("Carro Alugado")
-    st.number_input("Custo Aluguel (€)", min_value=0.0, step=10.0, key="rental_cost")
-    st.number_input("Comissão (%)", min_value=0.0, step=0.5, key="rental_commission")
+with det_col2:
+    total_custos = comissao_valor_semana + custo_gasolina_semana + st.session_state.despesas_fixas + outros_custos
+    st.write("**Totais:**")
+    st.write(f"- Total Ganhos: €{ganhos_brutos_semana:.2f}")
+    st.write(f"- Total Custos: €{total_custos:.2f}")
+    st.write(f"- **Lucro Líquido: €{ganhos_liquidos_semana:.2f}**")
+    st.write(f"- Margem de Lucro: {margem_lucro:.1f}%")
+    st.write(f"- **Valor por Hora: €{valor_por_hora:.2f}**")
 
-    st.subheader("Carro Próprio")
-    st.number_input("Seguro (€)", min_value=0.0, step=5.0, key="own_insurance")
-    st.number_input("Manutenção (€)", min_value=0.0, step=5.0, key="own_maintenance")
-    st.number_input("Comissão (%)", min_value=0.0, step=0.5, key="own_commission")
-    st.number_input("Slot TVDE (€)", min_value=0.0, step=5.0, key="own_slot_tvde")
+# Cálculos diários
+st.subheader("💰 Médias Diárias")
+ganho_bruto_diario = ganhos_brutos_semana / dias_trabalhados
+ganho_liquido_diario = ganhos_liquidos_semana / dias_trabalhados
+horas_diarias = horas_trabalhadas_semana / dias_trabalhados
 
-# -------------------------------
-# Função de cálculo
-# -------------------------------
-def calcular_lucro(earnings, custos, comissao_pct, extra_expenses=0.0):
-    total_custos = custos + extra_expenses
-    comissao_valor = earnings * (comissao_pct / 100)
-    lucro_liquido = earnings - total_custos - comissao_valor
-    return lucro_liquido, comissao_valor
+col1, col2, col3 = st.columns(3)
+col1.metric("Ganho Bruto Diário", f"€{ganho_bruto_diario:.2f}")
+col2.metric("Ganho Líquido Diário", f"€{ganho_liquido_diario:.2f}")
+col3.metric("Média Horas por Dia", f"{horas_diarias:.1f}h")
 
-def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
-    resultados = {}
-    detalhes = []
+# Projeção mensal
+st.header("📈 Projeção Mensal")
+dias_uteis_mes = st.slider("Dias úteis no mês", 20, 31, 22)
+semanas_mes = dias_uteis_mes / dias_trabalhados
+ganhos_mensais = ganhos_liquidos_semana * semanas_mes
 
-    extra = st.session_state.extra_expenses if st.session_state.include_extra_expenses else 0.0
+proj_col1, proj_col2, proj_col3 = st.columns(3)
+proj_col1.metric("Projeção de Ganhos Mensais", f"€{ganhos_mensais:.2f}")
+proj_col2.metric("Média Diária Líquida", f"€{ganho_liquido_diario:.2f}")
+proj_col3.metric("Valor por Hora", f"€{valor_por_hora:.2f}")
 
-    if calculation_type in ["próprio", "comparar"]:
-        custos = st.session_state.own_insurance + st.session_state.own_maintenance + st.session_state.own_slot_tvde + fuel_cost
-        lucro, comissao_valor = calcular_lucro(weekly_earnings, custos, st.session_state.own_commission, extra)
-        resultados["Carro Próprio"] = lucro
-        detalhes.append({
-            "Opção": "Carro Próprio",
-            "Seguro (€)": st.session_state.own_insurance,
-            "Manutenção (€)": st.session_state.own_maintenance,
-            "Slot TVDE (€)": st.session_state.own_slot_tvde,
-            "Combustível (€)": fuel_cost,
-            "Despesas Extras (€)": extra,
-            "Comissão (%)": st.session_state.own_commission,
-            "Comissão (€)": comissao_valor,
-            "Lucro Líquido (€)": lucro
-        })
+# Resumo financeiro
+st.header("💶 Resumo Financeiro Semanal")
+resumo_col1, resumo_col2, resumo_col3 = st.columns(3)
+resumo_col1.metric("Apuro Semanal", f"€{ganhos_brutos_semana:.2f}")
+resumo_col2.metric("Custos Semanais", f"€{total_custos:.2f}")
+resumo_col3.metric("Lucro Semanal", f"€{ganhos_liquidos_semana:.2f}", delta=f"{margem_lucro:.1f}%")
 
-    if calculation_type in ["alugado", "comparar"]:
-        custos = st.session_state.rental_cost + fuel_cost
-        lucro, comissao_valor = calcular_lucro(weekly_earnings, custos, st.session_state.rental_commission, extra)
-        resultados["Carro Alugado"] = lucro
-        detalhes.append({
-            "Opção": "Carro Alugado",
-            "Aluguel (€)": st.session_state.rental_cost,
-            "Combustível (€)": fuel_cost,
-            "Despesas Extras (€)": extra,
-            "Comissão (%)": st.session_state.rental_commission,
-            "Comissão (€)": comissao_valor,
-            "Lucro Líquido (€)": lucro
-        })
+# Resumo de horas
+st.subheader("⏰ Resumo de Horas")
+horas_col1, horas_col2, horas_col3 = st.columns(3)
+horas_col1.metric("Total Horas Trabalhadas", f"{horas_trabalhadas_semana:.1f}h")
+horas_col2.metric("Média Horas por Dia", f"{horas_diarias:.1f}h")
+horas_col3.metric("Valor por Hora", f"€{valor_por_hora:.2f}")
 
-    if calculation_type == "comparar" and len(resultados) == 2:
-        lucro_proprio = resultados["Carro Próprio"]
-        lucro_alugado = resultados["Carro Alugado"]
-        diferenca = lucro_proprio - lucro_alugado
-        diferenca_pct = (diferenca / lucro_alugado * 100) if lucro_alugado != 0 else 0
-        resultados["Diferença"] = (diferenca, diferenca_pct)
+# Valores avançados
+if st.session_state.show_advanced:
+    st.info(f"ℹ️ **Valores atuais das configurações avançadas:** Comissão: {st.session_state.comissao_plataforma}%, Despesas Fixas: €{st.session_state.despesas_fixas:.2f}")
 
-    return resultados, detalhes
-
-# -------------------------------
-# Botões mobile-first
-# -------------------------------
-st.header("🧮 Calcular")
-btn_cols = st.columns(3, gap="small")
-with btn_cols[0]:
-    if st.button("🚘 Alugado", use_container_width=True):
-        st.session_state.calculation_type = "alugado"
-with btn_cols[1]:
-    if st.button("🚗 Próprio", use_container_width=True):
-        st.session_state.calculation_type = "próprio"
-with btn_cols[2]:
-    if st.button("⚖️ Comparar", use_container_width=True):
-        st.session_state.calculation_type = "comparar"
-
-# -------------------------------
-# Cards e gráficos
-# -------------------------------
-if st.session_state.calculation_type:
-    resultados, detalhes = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
-    
-    st.subheader("📊 Painéis de Lucro")
-    cards = st.columns(len(resultados))
-
-    for i, (tipo, lucro) in enumerate(resultados.items()):
-        with cards[i]:
-            st.markdown(f"### {tipo}")
-            if tipo == "Diferença":
-                st.markdown(f"<h2>€ {lucro[0]:,.2f}</h2>", unsafe_allow_html=True)
-                st.markdown(f"<p>Δ {lucro[1]:.1f}%</p>", unsafe_allow_html=True)
-            else:
-                if weekly_hours > 0:
-                    lucro_hora = lucro / weekly_hours
-                else:
-                    lucro_hora = 0
-                    st.warning("⚠️ Horas semanais = 0, lucro/hora não calculado.")
-
-                if lucro < 0:
-                    st.warning(f"⚠️ Lucro negativo: € {lucro:,.2f}")
-
-                st.markdown(f"<h2>€ {lucro:,.2f}</h2>", unsafe_allow_html=True)
-                st.markdown(f"<p>Lucro/hora: € {lucro_hora:.2f} €/h</p>", unsafe_allow_html=True)
-
-                detalhe = next((d for d in detalhes if d["Opção"] == tipo), None)
-                if detalhe:
-                    for k, v in detalhe.items():
-                        if k not in ["Opção", "Lucro Líquido (€)"]:
-                            if "%" in k:
-                                st.markdown(f"{k}: {v:.1f}%")
-                            else:
-                                st.markdown(f"{k}: € {v:,.2f}")
-
-    # Gráfico Altair
-    theme = st.get_option("theme.base")
-    colors = {"dark": ["#FFB347", "#1E90FF"], "light": ["#FF7F50", "#6495ED"]}
-    bar_colors = alt.Scale(
-        domain=[k for k in resultados.keys() if k != "Diferença"],
-        range=colors.get(theme, colors["light"])
-    )
-    df_chart = pd.DataFrame({
-        "Opção": [k for k in resultados.keys() if k != "Diferença"],
-        "Lucro (€)": [v for k,v in resultados.items() if k != "Diferença"]
-    })
-    if not df_chart.empty:
-        chart = alt.Chart(df_chart).mark_bar(size=60).encode(
-            x=alt.X("Opção", sort=None),
-            y="Lucro (€)",
-            color=alt.Color("Opção", scale=bar_colors),
-            tooltip=["Opção", "Lucro (€)"]
-        ).properties(height=300)
-        st.altair_chart(chart, use_container_width=True)
-
-# -------------------------------
-# Dicas
-# -------------------------------
-with st.expander("💡 Dicas e Informações"):
-    st.markdown("""
-    - **Ganhos Semanais**: valor total recebido pelos serviços TVDE.  
-    - **Horas Semanais**: total de horas trabalhadas (incluindo espera).  
-    - **Combustível**: gasto médio semanal.  
-    - **Comissão**: taxa que a plataforma retém.  
-    - **Aluguel**: custo semanal do carro alugado.  
-    - **Seguro / Manutenção / Slot TVDE**: custos semanais fixos do carro próprio.  
-    - **Despesas Extras**: portagens, estacionamento, lavagens, etc.  
-    """)
+# Rodapé
+st.markdown("---")
+st.caption("App desenvolvido para cálculo de ganhos no TVDE. Use o botão 'Configurações Avançadas' para ajustar a comissão e despesas fixas.")
