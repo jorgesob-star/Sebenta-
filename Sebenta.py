@@ -68,14 +68,14 @@ if st.session_state.include_extra_expenses:
 # -------------------------------
 with st.expander("⚙️ Parâmetros Avançados"):
     st.subheader("Carro Alugado")
-    st.number_input("Custo Aluguel (€)", min_value=0.0, value=st.session_state.rental_cost, step=10.0, key="rental_cost")
-    st.number_input("Comissão (%)", min_value=0.0, value=st.session_state.rental_commission, step=0.5, key="rental_commission")
+    st.number_input("Custo Aluguel (€)", min_value=0.0, step=10.0, key="rental_cost")
+    st.number_input("Comissão (%)", min_value=0.0, step=0.5, key="rental_commission")
 
     st.subheader("Carro Próprio")
-    st.number_input("Seguro (€)", min_value=0.0, value=st.session_state.own_insurance, step=5.0, key="own_insurance")
-    st.number_input("Manutenção (€)", min_value=0.0, value=st.session_state.own_maintenance, step=5.0, key="own_maintenance")
-    st.number_input("Comissão (%)", min_value=0.0, value=st.session_state.own_commission, step=0.5, key="own_commission")
-    st.number_input("Slot TVDE (€)", min_value=0.0, value=st.session_state.own_slot_tvde, step=5.0, key="own_slot_tvde")
+    st.number_input("Seguro (€)", min_value=0.0, step=5.0, key="own_insurance")
+    st.number_input("Manutenção (€)", min_value=0.0, step=5.0, key="own_maintenance")
+    st.number_input("Comissão (%)", min_value=0.0, step=0.5, key="own_commission")
+    st.number_input("Slot TVDE (€)", min_value=0.0, step=5.0, key="own_slot_tvde")
 
 # -------------------------------
 # Botões de Cálculo
@@ -144,7 +144,7 @@ if st.session_state.calculation_type:
         chart = alt.Chart(df_chart).mark_bar(size=60).encode(
             x=alt.X("Opção", sort=None),
             y="Lucro (€)",
-            color="Opção"  # CORRETAMENTE indentado dentro do encode
+            color="Opção"
         ).properties(height=300)
         st.altair_chart(chart, use_container_width=True)
 
