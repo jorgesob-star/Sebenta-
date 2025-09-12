@@ -80,13 +80,11 @@ with st.expander("⚙️ Parâmetros Avançados"):
 # Botões de cálculo (mobile-first)
 # -------------------------------
 st.header("🧮 Calcular")
-if st.runtime.exists():
-    # Colunas responsivas: se mobile, empilha verticalmente
-    screen_width = st.experimental_get_query_params().get("width", [0])[0]
-else:
-    screen_width = 0
 
-if screen_width and int(screen_width) < 600:
+# Detecta largura da tela (via query_params) para layout responsivo
+screen_width = int(st.query_params.get("width", [0])[0])  # substitui experimental_get_query_params
+
+if screen_width < 600:
     # Mobile: empilhar verticalmente
     if st.button("🚘 Alugado", use_container_width=True):
         st.session_state.calculation_type = "alugado"
