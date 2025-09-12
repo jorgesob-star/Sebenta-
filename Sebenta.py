@@ -30,7 +30,7 @@ if 'own_insurance' not in st.session_state:
 if 'own_maintenance' not in st.session_state:
     st.session_state.own_maintenance = 25.0
 if 'own_commission' not in st.session_state:
-    st.session_state.own_commission = 12.0
+    st.session_state.own_commission = 6.0
 if 'own_slot_tvde' not in st.session_state:     # <-- Novo parâmetro
     st.session_state.own_slot_tvde = 50.0       # valor inicial (exemplo)
 if 'extra_expenses' not in st.session_state:
