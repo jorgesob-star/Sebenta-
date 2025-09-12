@@ -50,21 +50,21 @@ with col1:
     weekly_earnings = st.number_input(
         "Ganhos Semanais (€):",
         min_value=0.0,
-        value=500.0,
+        value=700.0,
         step=10.0,
         help="Valor total recebido pelos serviços TVDE na semana"
     )
     weekly_hours = st.number_input(
         "Horas Trabalhadas na Semana:",
         min_value=0,
-        value=40,
+        value=50,
         step=1,
         help="Total de horas trabalhadas (incluindo espera)"
     )
     fuel_cost = st.number_input(
         "Custo com Combustível (€):",
         min_value=0.0,
-        value=100.0,
+        value=200.0,
         step=5.0,
         help="Gasto semanal estimado com combustível"
     )
