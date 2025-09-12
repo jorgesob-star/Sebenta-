@@ -144,51 +144,49 @@ with btn_cols[2]:
         st.session_state.calculation_type = "comparar"
 
 # -------------------------------
-# Resultados com cards coloridos
+# Cards estilo painel
 # -------------------------------
 if st.session_state.calculation_type:
     resultados, detalhes = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
-
-    st.subheader("📊 Resumo de Lucros")
+    
+    st.subheader("📊 Painéis de Lucro")
     cards = st.columns(len(resultados))
+    
+    cores_custos = {
+        "Aluguel (€)": "orange",
+        "Slot TVDE (€)": "orange",
+        "Seguro (€)": "green",
+        "Manutenção (€)": "green",
+        "Combustível (€)": "blue",
+        "Despesas Extras (€)": "gray",
+        "Comissão (€)": "red",
+        "Comissão (%)": "red"
+    }
+
     for i, (tipo, lucro) in enumerate(resultados.items()):
         with cards[i]:
+            st.markdown(f"### {tipo}")
             if tipo == "Diferença":
-                st.metric(label="Diferença (€)", value=f"€ {lucro[0]:,.2f}", delta=f"{lucro[1]:.1f}%")
+                st.markdown(f"<h2 style='color:purple'>€ {lucro[0]:,.2f}</h2>", unsafe_allow_html=True)
+                st.markdown(f"<p style='color:purple'>Δ {lucro[1]:.1f}%</p>", unsafe_allow_html=True)
             else:
                 lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
-                st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
-                
-                # Mini-resumo de custos colorido
+                st.markdown(f"<h2 style='color:darkblue'>€ {lucro:,.2f}</h2>", unsafe_allow_html=True)
+                st.markdown(f"<p>Lucro/hora: {lucro_hora:.2f} €/h</p>", unsafe_allow_html=True)
+
+                # Mini-resumo dos custos colorido
                 detalhe = next((d for d in detalhes if d["Opção"] == tipo), None)
                 if detalhe:
-                    st.markdown("**Custos:**")
-                    custo_html = ""
-                    cores = {
-                        "Aluguel (€)": "orange",
-                        "Slot TVDE (€)": "orange",
-                        "Seguro (€)": "green",
-                        "Manutenção (€)": "green",
-                        "Combustível (€)": "blue",
-                        "Despesas Extras (€)": "gray",
-                        "Comissão (€)": "red",
-                        "Comissão (%)": "red"
-                    }
                     for k, v in detalhe.items():
                         if k not in ["Opção", "Lucro Líquido (€)"]:
-                            cor = cores.get(k, "black")
-                            custo_html += f"<p style='color:{cor};margin:0'>{k}: € {v}</p>"
-                    st.markdown(custo_html, unsafe_allow_html=True)
-
-    st.subheader("📋 Detalhamento Completo de Custos")
-    st.dataframe(pd.DataFrame(detalhes).fillna("–"), use_container_width=True)
+                            cor = cores_custos.get(k, "black")
+                            st.markdown(f"<p style='color:{cor};margin:0'>{k}: € {v}</p>", unsafe_allow_html=True)
 
     # Gráfico Altair
     theme = st.get_option("theme.base")
     colors = {"dark": ["#FFB347", "#1E90FF"], "light": ["#FF7F50", "#6495ED"]}
     bar_colors = alt.Scale(domain=[k for k in resultados.keys() if k != "Diferença"],
                            range=colors.get(theme, colors["light"]))
-
     if len(resultados) > 1:
         df_chart = pd.DataFrame({
             "Opção": [k for k in resultados.keys() if k != "Diferença"],
