@@ -1,4 +1,6 @@
 import streamlit as st
+import pandas as pd
+import altair as alt
 
 # Configuração da página
 st.set_page_config(
@@ -108,6 +110,9 @@ ganhos_liquidos_semana = (ganhos_brutos_semana - comissao_valor_semana -
 margem_lucro = (ganhos_liquidos_semana / ganhos_brutos_semana) * 100 if ganhos_brutos_semana > 0 else 0
 valor_por_hora = ganhos_liquidos_semana / horas_trabalhadas_semana if horas_trabalhadas_semana > 0 else 0
 
+if ganhos_liquidos_semana < 0:
+    st.warning("⚠️ Atenção: os custos excedem os ganhos! Verifique suas entradas.")
+
 # Resultados
 st.header("Resultados Semanais")
 col1, col2, col3 = st.columns(3)
@@ -118,7 +123,7 @@ col3.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 st.subheader("💰 Valor por Hora")
 st.metric("Ganho Líquido por Hora", f"€{valor_por_hora:.2f}")
 
-# Distribuição de custos
+# Distribuição de custos usando Altair
 st.subheader("Distribuição dos Custos e Ganhos")
 categorias = ['Ganhos Líquidos', 'Comissão', 'Gasolina', 'Despesas Fixas', 'Outros']
 valores = [
@@ -128,14 +133,25 @@ valores = [
     st.session_state.despesas_fixas, 
     outros_custos
 ]
+tipos = ["Ganho", "Custo", "Custo", "Custo", "Custo"]
 
-data = {
+df = pd.DataFrame({
     "Categoria": categorias,
     "Valor (€)": valores,
-    "Tipo": ["Ganho", "Custo", "Custo", "Custo", "Custo"]
-}
+    "Tipo": tipos
+})
 
-st.bar_chart(data, x="Categoria", y="Valor (€)", color="Tipo")
+chart = alt.Chart(df).mark_bar().encode(
+    x=alt.X('Categoria', sort=None),
+    y='Valor (€)',
+    color='Tipo',
+    tooltip=['Categoria', 'Valor (€)', 'Tipo']
+).properties(
+    width=600,
+    height=400
+)
+
+st.altair_chart(chart, use_container_width=True)
 
 # Tabela de detalhamento
 st.subheader("📊 Detalhamento dos Custos")
