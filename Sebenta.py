@@ -119,7 +119,6 @@ def calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, calculation_type):
             "Lucro Líquido (€)": lucro
         })
 
-    # Cálculo da diferença se comparar
     if calculation_type == "comparar" and len(resultados) == 2:
         lucro_proprio = resultados["Carro Próprio"]
         lucro_alugado = resultados["Carro Alugado"]
@@ -145,7 +144,7 @@ with btn_cols[2]:
         st.session_state.calculation_type = "comparar"
 
 # -------------------------------
-# Resultados
+# Resultados com cards coloridos
 # -------------------------------
 if st.session_state.calculation_type:
     resultados, detalhes = calcular_ganhos(weekly_earnings, weekly_hours, fuel_cost, st.session_state.calculation_type)
@@ -159,11 +158,32 @@ if st.session_state.calculation_type:
             else:
                 lucro_hora = lucro / weekly_hours if weekly_hours > 0 else 0
                 st.metric(label=tipo, value=f"€ {lucro:,.2f}", delta=f"{lucro_hora:.2f} €/h")
+                
+                # Mini-resumo de custos colorido
+                detalhe = next((d for d in detalhes if d["Opção"] == tipo), None)
+                if detalhe:
+                    st.markdown("**Custos:**")
+                    custo_html = ""
+                    cores = {
+                        "Aluguel (€)": "orange",
+                        "Slot TVDE (€)": "orange",
+                        "Seguro (€)": "green",
+                        "Manutenção (€)": "green",
+                        "Combustível (€)": "blue",
+                        "Despesas Extras (€)": "gray",
+                        "Comissão (€)": "red",
+                        "Comissão (%)": "red"
+                    }
+                    for k, v in detalhe.items():
+                        if k not in ["Opção", "Lucro Líquido (€)"]:
+                            cor = cores.get(k, "black")
+                            custo_html += f"<p style='color:{cor};margin:0'>{k}: € {v}</p>"
+                    st.markdown(custo_html, unsafe_allow_html=True)
 
-    st.subheader("📋 Detalhamento de Custos")
+    st.subheader("📋 Detalhamento Completo de Custos")
     st.dataframe(pd.DataFrame(detalhes).fillna("–"), use_container_width=True)
 
-    # Gráfico Altair responsivo
+    # Gráfico Altair
     theme = st.get_option("theme.base")
     colors = {"dark": ["#FFB347", "#1E90FF"], "light": ["#FF7F50", "#6495ED"]}
     bar_colors = alt.Scale(domain=[k for k in resultados.keys() if k != "Diferença"],
