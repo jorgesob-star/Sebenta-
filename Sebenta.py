@@ -26,10 +26,35 @@ if 'despesas_fixas' not in st.session_state:
     st.session_state.despesas_fixas = st.session_state.aluguer + st.session_state.seguro + st.session_state.slot
 if 'show_advanced' not in st.session_state:
     st.session_state.show_advanced = False
+if 'ganhos_brutos_semana' not in st.session_state:
+    st.session_state.ganhos_brutos_semana = 900.0
+if 'custo_gasolina_semana' not in st.session_state:
+    st.session_state.custo_gasolina_semana = 200.0
 
 # Função para alternar a visualização da seção de parâmetros
 def toggle_advanced():
     st.session_state.show_advanced = not st.session_state.show_advanced
+
+# Função centralizada para cálculos
+def calculate_financials(ganhos_brutos, horas_trabalhadas, dias_trabalhados, custo_gasolina, outros_custos, comissao, despesas_fixas):
+    comissao_valor = ganhos_brutos * (comissao / 100)
+    ganhos_liquidos = ganhos_brutos - comissao_valor - custo_gasolina - despesas_fixas - outros_custos
+    total_custos = comissao_valor + custo_gasolina + despesas_fixas + outros_custos
+    margem_lucro = (ganhos_liquidos / ganhos_brutos * 100) if ganhos_brutos > 0 else 0
+    valor_por_hora = ganhos_liquidos / horas_trabalhadas if horas_trabalhadas > 0 else 0
+    ganho_bruto_diario = ganhos_brutos / dias_trabalhados if dias_trabalhados > 0 else 0
+    ganho_liquido_diario = ganhos_liquidos / dias_trabalhados if dias_trabalhados > 0 else 0
+    horas_diarias = horas_trabalhadas / dias_trabalhados if dias_trabalhados > 0 else 0
+    return {
+        "comissao_valor": comissao_valor,
+        "ganhos_liquidos": ganhos_liquidos,
+        "total_custos": total_custos,
+        "margem_lucro": margem_lucro,
+        "valor_por_hora": valor_por_hora,
+        "ganho_bruto_diario": ganho_bruto_diario,
+        "ganho_liquido_diario": ganho_liquido_diario,
+        "horas_diarias": horas_diarias
+    }
 
 # Botão para mostrar/ocultar seção de alteração de parâmetros
 st.button(
@@ -64,9 +89,6 @@ if st.session_state.show_advanced:
 # Entradas principais do usuário
 st.header("Entradas Semanais")
 
-apuro_semanal = 900.0
-combustivel_semanal = 200.0
-
 col1, col2 = st.columns(2)
 
 with col1:
@@ -74,25 +96,31 @@ with col1:
     ganhos_brutos_semana = st.number_input(
         "Ganhos Brutos Semanais (€)", 
         min_value=0.0, 
-        value=apuro_semanal, 
+        value=st.session_state.ganhos_brutos_semana, 
         step=10.0,
         help="Total de ganhos brutos na semana (apuro)"
     )
+    st.session_state.ganhos_brutos_semana = ganhos_brutos_semana
     horas_trabalhadas_semana = st.number_input(
         "Total de horas trabalhadas na semana", 
         min_value=0.0, 
+        max_value=168.0,  # Máximo de horas em uma semana (7*24)
         value=50.0, 
         step=0.5,
         help="Número total de horas que trabalhou durante a semana"
     )
+    # Validação de horas
+    if horas_trabalhadas_semana > dias_trabalhados * 24:
+        st.error("⚠️ Horas trabalhadas excedem o limite possível para os dias selecionados!")
 
 with col2:
     custo_gasolina_semana = st.number_input(
         "Custo com Gasolina Semanal (€)", 
         min_value=0.0, 
-        value=combustivel_semanal, 
+        value=st.session_state.custo_gasolina_semana, 
         step=10.0
     )
+    st.session_state.custo_gasolina_semana = custo_gasolina_semana
     outros_custos = st.number_input(
         "Outros Custos Semanais (€)", 
         min_value=0.0, 
@@ -101,17 +129,27 @@ with col2:
         help="Lavagens, portagens, estacionamento, etc."
     )
 
-# Cálculos
-comissao_valor_semana = ganhos_brutos_semana * (st.session_state.comissao_plataforma / 100)
+# Realizar cálculos
+results = calculate_financials(
+    ganhos_brutos_semana, horas_trabalhadas_semana, dias_trabalhados,
+    custo_gasolina_semana, outros_custos, st.session_state.comissao_plataforma,
+    st.session_state.despesas_fixas
+)
 
-ganhos_liquidos_semana = (ganhos_brutos_semana - comissao_valor_semana - 
-                          custo_gasolina_semana - st.session_state.despesas_fixas - outros_custos)
-
-margem_lucro = (ganhos_liquidos_semana / ganhos_brutos_semana) * 100 if ganhos_brutos_semana > 0 else 0
-valor_por_hora = ganhos_liquidos_semana / horas_trabalhadas_semana if horas_trabalhadas_semana > 0 else 0
+comissao_valor_semana = results["comissao_valor"]
+ganhos_liquidos_semana = results["ganhos_liquidos"]
+total_custos = results["total_custos"]
+margem_lucro = results["margem_lucro"]
+valor_por_hora = results["valor_por_hora"]
+ganho_bruto_diario = results["ganho_bruto_diario"]
+ganho_liquido_diario = results["ganho_liquido_diario"]
+horas_diarias = results["horas_diarias"]
 
 if ganhos_liquidos_semana < 0:
     st.warning("⚠️ Atenção: os custos excedem os ganhos! Verifique suas entradas.")
+
+if margem_lucro < 10 and ganhos_brutos_semana > 0:
+    st.warning("⚠️ Margem de lucro muito baixa! Considere reduzir custos ou aumentar ganhos.")
 
 # Resultados
 st.header("Resultados Semanais")
@@ -123,17 +161,17 @@ col3.metric("Margem de Lucro", f"{margem_lucro:.1f}%")
 st.subheader("💰 Valor por Hora")
 st.metric("Ganho Líquido por Hora", f"€{valor_por_hora:.2f}")
 
-# Distribuição de custos usando Altair
+# Distribuição de custos usando Altair (melhorada para negativos)
 st.subheader("Distribuição dos Custos e Ganhos")
 categorias = ['Ganhos Líquidos', 'Comissão', 'Gasolina', 'Despesas Fixas', 'Outros']
 valores = [
-    max(ganhos_liquidos_semana, 0), 
+    ganhos_liquidos_semana, 
     comissao_valor_semana, 
     custo_gasolina_semana, 
     st.session_state.despesas_fixas, 
     outros_custos
 ]
-tipos = ["Ganho", "Custo", "Custo", "Custo", "Custo"]
+tipos = ['Ganho' if ganhos_liquidos_semana >= 0 else 'Perda', 'Custo', 'Custo', 'Custo', 'Custo']
 
 df = pd.DataFrame({
     "Categoria": categorias,
@@ -144,11 +182,14 @@ df = pd.DataFrame({
 chart = alt.Chart(df).mark_bar().encode(
     x=alt.X('Categoria', sort=None),
     y='Valor (€)',
-    color='Tipo',
+    color=alt.Color('Tipo', scale=alt.Scale(domain=['Ganho', 'Custo', 'Perda'], range=['#00cc00', '#ff3333', '#ff0000'])),
     tooltip=['Categoria', 'Valor (€)', 'Tipo']
 ).properties(
     width=600,
-    height=400
+    height=400,
+    title="Distribuição de Ganhos e Custos Semanais"
+).configure_view(
+    description="Gráfico de barras mostrando a distribuição de ganhos líquidos, comissão, gasolina, despesas fixas e outros custos."
 )
 
 st.altair_chart(chart, use_container_width=True)
@@ -171,7 +212,6 @@ with det_col1:
     st.write(f"- Outros Custos: €{outros_custos:.2f}")
 
 with det_col2:
-    total_custos = comissao_valor_semana + custo_gasolina_semana + st.session_state.despesas_fixas + outros_custos
     st.write("**Totais:**")
     st.write(f"- Total Ganhos: €{ganhos_brutos_semana:.2f}")
     st.write(f"- Total Custos: €{total_custos:.2f}")
@@ -181,10 +221,6 @@ with det_col2:
 
 # Cálculos diários
 st.subheader("💰 Médias Diárias")
-ganho_bruto_diario = ganhos_brutos_semana / dias_trabalhados
-ganho_liquido_diario = ganhos_liquidos_semana / dias_trabalhados
-horas_diarias = horas_trabalhadas_semana / dias_trabalhados
-
 col1, col2, col3 = st.columns(3)
 col1.metric("Ganho Bruto Diário", f"€{ganho_bruto_diario:.2f}")
 col2.metric("Ganho Líquido Diário", f"€{ganho_liquido_diario:.2f}")
