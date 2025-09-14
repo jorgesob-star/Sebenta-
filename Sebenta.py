@@ -3,7 +3,6 @@ import pandas as pd
 import json
 from datetime import datetime
 import os
-import plotly.express as px
 
 # Configuração da página
 st.set_page_config(
@@ -219,15 +218,6 @@ with col2:
         st.metric(label="🅱️ Grupo B", value=f"€{group_b_sum:,.0f}")
         st.markdown('</div>', unsafe_allow_html=True)
     
-    # Gráfico de pizza para visualização das proporções
-    if total > 0:  # Só mostrar gráfico se houver valores
-        fig = px.pie(df, values='Valor', names='Plataforma', 
-                     title='Distribuição por Plataforma',
-                     hole=0.4)
-        fig.update_traces(textposition='inside', textinfo='percent+label')
-        fig.update_layout(height=300)
-        st.plotly_chart(fig, use_container_width=True)
-    
     # Gerar timestamp para nome do arquivo
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     file_name = f"valores_{timestamp}.csv"
@@ -242,14 +232,10 @@ with col2:
         use_container_width=True
     )
 
-# Adicionar gráfico de barras na parte inferior
+# Adicionar gráfico de barras simples usando Streamlit nativo
 st.subheader("Comparação Visual dos Valores")
 if total > 0:  # Só mostrar gráfico se houver valores
-    bar_fig = px.bar(df, x='Plataforma', y='Valor', color='Grupo',
-                     text_auto=True, 
-                     color_discrete_map={'A': '#1f77b4', 'B': '#ff7f0e'})
-    bar_fig.update_layout(height=400)
-    st.plotly_chart(bar_fig, use_container_width=True)
+    st.bar_chart(df.set_index('Plataforma')['Valor'])
 
 # Informações adicionais
 st.info("💡 Dica: Os nomes e valores são automaticamente salvos e persistem entre execuções.")
