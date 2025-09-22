@@ -97,6 +97,13 @@ with col1:
         step=5.0,
         help="Total de gorjetas recebidas na semana"
     )
+    taxas_cancelamento = st.number_input(
+        "Taxas de Cancelamento (€)", 
+        min_value=0.0, 
+        value=0.0, 
+        step=5.0,
+        help="Taxas de cancelamento recebidas na semana"
+    )
 
 with col2:
     portagens_recebidas = st.number_input(
@@ -131,7 +138,7 @@ horas_trabalhadas_semana = st.number_input(
 # -------------------------------
 # Cálculos
 # -------------------------------
-ganhos_extra = gorjetas + portagens_recebidas
+ganhos_extra = gorjetas + portagens_recebidas + taxas_cancelamento
 ganhos_totais = ganhos_brutos_semana + ganhos_extra
 
 comissao_valor_semana = ganhos_brutos_semana * (st.session_state.comissao_plataforma / 100)
@@ -186,6 +193,7 @@ with det_col1:
     st.write(f"- Apuro Bruto: €{ganhos_brutos_semana:.2f}")
     st.write(f"- Gorjetas: €{gorjetas:.2f}")
     st.write(f"- Portagens Recebidas: €{portagens_recebidas:.2f}")
+    st.write(f"- Taxas de Cancelamento: €{taxas_cancelamento:.2f}")
     st.write(f"- **Total Ganhos: €{ganhos_totais:.2f}**")
     st.write("")
     st.write("**Custos Fixos Detalhados:**")
