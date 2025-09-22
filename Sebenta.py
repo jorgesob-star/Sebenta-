@@ -41,7 +41,7 @@ st.markdown("Compare os lucros entre carro alugado e carro próprio.")
 # Dados de entrada
 # -------------------------------
 st.header("📊 Dados de Entrada")
-weekly_earnings = st.number_input("Ganhos Semanais (€)", min_value=0.0, value=750.0, step=10.0)
+weekly_earnings = st.number_input("Ganhos Semanais (€)", min_value=0.0, value=855.0, step=10.0)
 weekly_hours = st.number_input("Horas Semanais", min_value=0, value=50, step=1)
 fuel_cost = st.number_input("Combustível (€)", min_value=0.0, value=200.0, step=5.0)
 
