@@ -97,8 +97,8 @@ with col1:
         step=5.0,
         help="Total de gorjetas recebidas na semana"
     )
-    incentivos = st.number_input(
-        "Incentivos / Prémios (€)", 
+    outros ganhos = st.number_input(
+        "outros ganhos / Prémios (€)", 
         min_value=0.0, 
         value=0.0, 
         step=5.0,
