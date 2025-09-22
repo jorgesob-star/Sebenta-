@@ -83,12 +83,12 @@ col1, col2 = st.columns(2)
 
 with col1:
     dias_trabalhados = st.slider("Dias trabalhados na semana", 1, 7, 7)
-    ganhos_semana = st.number_input(
-        "Ganhos Brutos Semanais (€)", 
+    ganhos_semanais = st.number_input(
+        "Ganhos Semanais (€)", 
         min_value=0.0, 
         value=apuro_semanal, 
         step=10.0,
-        help="Total de ganhos brutos na semana (corridas TVDE)"
+        help="Total de ganhos da semana (corridas TVDE, sem incluir extras)"
     )
     gorjetas = st.number_input(
         "Gorjetas (€)", 
@@ -139,9 +139,9 @@ horas_trabalhadas_semana = st.number_input(
 # Cálculos
 # -------------------------------
 ganhos_extra = gorjetas + portagens_recebidas + taxas_cancelamento
-ganhos_totais = ganhos_brutos_semana + ganhos_extra
+ganhos_totais = ganhos_semanais + ganhos_extra
 
-comissao_valor_semana = ganhos_brutos_semana * (st.session_state.comissao_plataforma / 100)
+comissao_valor_semana = ganhos_semanais * (st.session_state.comissao_plataforma / 100)
 
 ganhos_liquidos_semana = (ganhos_totais - comissao_valor_semana - 
                           custo_gasolina_semana - st.session_state.despesas_fixas - outros_custos)
@@ -190,7 +190,7 @@ det_col1, det_col2 = st.columns(2)
 
 with det_col1:
     st.write("**Ganhos:**")
-    st.write(f"- Apuro Bruto: €{ganhos_brutos_semana:.2f}")
+    st.write(f"- Ganhos Semanais: €{ganhos_semanais:.2f}")
     st.write(f"- Gorjetas: €{gorjetas:.2f}")
     st.write(f"- Portagens Recebidas: €{portagens_recebidas:.2f}")
     st.write(f"- Taxas de Cancelamento: €{taxas_cancelamento:.2f}")
@@ -246,7 +246,7 @@ proj_col3.metric("Valor por Hora", f"€{valor_por_hora:.2f}")
 # -------------------------------
 st.header("💶 Resumo Financeiro Semanal")
 resumo_col1, resumo_col2, resumo_col3 = st.columns(3)
-resumo_col1.metric("Apuro + Extras", f"€{ganhos_totais:.2f}")
+resumo_col1.metric("Ganhos + Extras", f"€{ganhos_totais:.2f}")
 resumo_col2.metric("Custos Semanais", f"€{total_custos:.2f}")
 resumo_col3.metric("Lucro Semanal", f"€{ganhos_liquidos_semana:.2f}", delta=f"{margem_lucro:.1f}%")
 
